@@ -1,0 +1,13 @@
+
+Status Of Driver in API
+    0: cancelled
+    1: process
+    2: completed
+    3: unavailabel
+    4: free
+    5: booking_pending
+
+
+
+Google MAP loaction suggestion API 
+    https://maps.googleapis.com/maps/api/place/autocomplete/json?input=Mangala&types=geocode&components=country:in&key=AIzaSyCCGeITRzeGBOrjDEaVqwM0H6Ug-NtqmcU
