@@ -9,6 +9,8 @@ class UserModel {
   int is_verify_mobile;
   String auth_key;
   String profile_image;
+  String cab_image;
+  String cab_name;
   
   UserModel(
     this.id,
@@ -20,7 +22,9 @@ class UserModel {
     this.mobile,
     this.is_verify_mobile,
     this.auth_key,
-    this.profile_image
+    this.profile_image,
+    this.cab_image,
+    this.cab_name
   );
 
   UserModel.fromDB(Map<String, dynamic> parsedJson){
@@ -34,6 +38,8 @@ class UserModel {
     this.is_verify_mobile = parsedJson['is_verify_mobile'];
     this.auth_key = parsedJson['auth_key'];
     this.profile_image = parsedJson['profile_image'];
+    this.cab_image = parsedJson['cab_image'];
+    this.cab_name = parsedJson['cab_name'];
   }
 
   UserModel.fromJSON(Map<String, dynamic> parsedJson){
@@ -47,6 +53,8 @@ class UserModel {
     this.is_verify_mobile = parsedJson['is_verify_mobile'];
     this.auth_key = parsedJson['auth_key'];
     this.profile_image = parsedJson['profile_image'];
+    this.cab_image = parsedJson['cab_image'];
+    this.cab_name = parsedJson['cab_name'];
   }
 
   Map<String, dynamic> toMapForDb(){
@@ -60,7 +68,9 @@ class UserModel {
       "mobile": mobile,
       "is_verify_mobile": is_verify_mobile,
       "auth_key": auth_key,
-      "profile_image": profile_image
+      "profile_image": profile_image,
+      "cab_image": cab_image,
+      "cab_name": cab_name
     };
   }
 }

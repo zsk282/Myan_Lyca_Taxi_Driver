@@ -7,13 +7,11 @@ import 'package:location/location.dart';
 import '../services/CabTypeService.dart';
 import '../widgets/SideDrawerWidget.dart';
 import '../services/GoogleMapApiService.dart';
-// import '../widgets/CabTypeWidget.dart';
-// import '../widgets/PaymentTypeWidget.dart';
 import '../resources/UserRepository.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
-// import 'package:lite_rolling_switch/lite_rolling_switch.dart';
-// import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
+import '../services/DriverApiService.dart';
+
 class BookingScreen extends StatefulWidget {
   @override
   State<BookingScreen> createState() => BookingScreenState();
@@ -24,6 +22,7 @@ enum ConfirmAction { CANCEL, ACCEPT }
 class BookingScreenState extends State<BookingScreen> {
   bool loading = true;
 
+  var driverServices = new DriverApiService();
   GoogleMapController mapController;
   GoogleMapsServices _googleMapsServices = GoogleMapsServices();
   Completer<GoogleMapController> _controller = Completer();
@@ -443,25 +442,11 @@ class BookingScreenState extends State<BookingScreen> {
                 ),
                 Switch(
                   value: isDriverOnlineflag,
-                  onChanged: (value) {
-                    setState(() {
-                      isDriverOnlineflag = value;
-                      print('aaaaa $value');
-                      if(value){
-                        if(_bookingTimer != null){
-                          _bookingTimer.cancel();
-                        }
-                        print("reinitiated timerrr");
-                        _bookingTimer = new Timer.periodic(const Duration(seconds:10), (Timer t) => _asyncBookingConfirmDialog(context));
-                        setState(() {
-                          
-                        });
-                      }else{
-                        if(_bookingTimer != null){
-                          _bookingTimer.cancel();
-                        }
-                      }
-                    });
+                  onChanged: (value) async {
+                      var temp_res = await driverServices.updateDriverStatusByAccessToken(user.auth_key, (value ? 1 : 0) );
+                      isDriverOnlineflag = (temp_res['driver_status'] == "Offline" ? false : true);
+                      print('Driver is now::  $value');
+                      setState(() { });
                   },
 
                   activeTrackColor: Colors.green, 

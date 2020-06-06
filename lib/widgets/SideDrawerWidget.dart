@@ -106,9 +106,13 @@ class SideDrawerWidgetState extends State<SideDrawerWidget> {
                                     shape: BoxShape.circle,
                                     image: new DecorationImage(
                                         fit: BoxFit.cover,
-                                        image: new AssetImage( 
+                                        image: 
+                                          user.cab_image != null 
+                                          ? new NetworkImage( 
+                                            "http://mltaxi.codeartweb.com/"+user.cab_image)
+                                          : new AssetImage( 
                                             "assets/images/car@3x.png"
-                                        )
+                                          )
                                     )
                                 )
                               ),
@@ -116,7 +120,7 @@ class SideDrawerWidgetState extends State<SideDrawerWidget> {
                                 height: 10
                               ),
                               Text(
-                                "Car Name",
+                                user.cab_name != null ? user.cab_name : "",
                                 style: TextStyle(
                                   color: Colors.white
                                 ),

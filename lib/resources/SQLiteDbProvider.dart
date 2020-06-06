@@ -37,7 +37,9 @@ class SQLiteDbProvider {
               is_verify_mobile INTEGER,
               auth_key TEXT,
               profile_image TEXT,
-              device_id TEXT
+              device_id TEXT,
+              cab_image TEXT,
+              cab_name TEXT
             )
         """);
       }

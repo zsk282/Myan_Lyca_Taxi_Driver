@@ -5,6 +5,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:qrscan/qrscan.dart' as scanner;
 import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import '../resources/UserRepository.dart';
 
 class QRCodeScreen extends StatefulWidget {
   @override
@@ -15,17 +17,28 @@ class QRCodeScreenState extends State<QRCodeScreen> {
   Uint8List bytes = Uint8List(0);
   TextEditingController _inputController;
   TextEditingController _outputController;
+  var userRepository = new UserRepository();
+  var user;
 
   @override
   initState() {
     super.initState();
     this._inputController = new TextEditingController();
     this._outputController = new TextEditingController();
-
-    // _scanQR();
+    
+    getUserData();
+    super.initState();
   }
 
-  String result = "Hello World...!";
+  getUserData() async {
+    var userdata = await userRepository.fetchUserFromDB();
+    setState((){
+      user = userdata;
+    });
+  }
+
+
+  String result = "";
   Future _scanQR() async {
     try {
       String cameraScanResult = await scanner.scan();
@@ -60,14 +73,17 @@ class QRCodeScreenState extends State<QRCodeScreen> {
                     shape: BoxShape.circle,
                     image: new DecorationImage(
                         fit: BoxFit.cover,
-                        image: new NetworkImage(
-                            "https://wanderlustandlipstick.com/wp-content/uploads/2007/11/sixt_driver1.jpg")
+                        image: new NetworkImage( 
+                            user != null 
+                              ? (user != null ? "http://mltaxi.codeartweb.com/"+user.profile_image: "")
+                              : "http://mltaxi.codeartweb.com/media/profileimage/profile-pic.jpg"
+                        )
                     )
                 )
               )
             ),
             Center(
-              child: Text('Driver Name',style: TextStyle(fontSize: MediaQuery.of(context).size.height * 0.03,color: Colors.black)),
+              child: Text(user != null ? user.full_name : '',style: TextStyle(fontSize: MediaQuery.of(context).size.height * 0.03,color: Colors.black)),
             ),
             Center(
               child: Text('201 Successful Trips',style: TextStyle(fontSize: MediaQuery.of(context).size.height * 0.02,color: Colors.green)),
@@ -96,12 +112,18 @@ class QRCodeScreenState extends State<QRCodeScreen> {
                 decoration: new BoxDecoration(
                     // shape: BoxShape.circle,
                     border: Border.all(color: Colors.black),
-                    image: new DecorationImage(
-                        fit: BoxFit.cover,
-                        image: new NetworkImage(
-                            "https://www.emoderationskills.com/wp-content/uploads/2010/08/QR1.jpg")
-                    )
-                )
+                    // image: new DecorationImage(
+                    //   fit: BoxFit.cover,
+                    //   image: new NetworkImage(
+                    //     "https://www.emoderationskills.com/wp-content/uploads/2010/08/QR1.jpg"
+                    //   )
+                    // )
+                ),
+                child: QrImage(
+                  data: user.id != null ? user.id.toString() : 'testing',
+                  version: 1,
+                  size: 200.0,
+                ),
               )
             )
             // RaisedButton(

@@ -27,6 +27,30 @@ class DriverApiService{
     }
   }
 
+  /* 
+   * 0 == offline 1 == online
+   */
+  Future updateDriverStatusByAccessToken(String accessToken,int status) async {
+    final http.Response response = await http.post(
+      base_url+"update-driver-status?access_token="+accessToken,
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Accept': '*/*',
+      },
+      body: json.encode({
+        "driver_status": status
+      }),
+    );
+    var temp = json.decode(response.body);
+    if (temp['success'].toString() == 'true') {
+      temp = temp['data'];
+      temp = temp['driver_data'];
+      return temp;
+    } else {
+      throw Exception('Failed to call updateDriverStatusByAccessToken API');
+    }
+  }
+
   Future<Map<String,dynamic>> updateUserByAccessToken(String accessToken,Map data) async {
     final http.Response response = await http.post(
       base_url+"edit-profile?access_token="+accessToken,
