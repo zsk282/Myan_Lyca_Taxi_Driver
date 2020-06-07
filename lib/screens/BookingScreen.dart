@@ -450,6 +450,7 @@ class BookingScreenState extends State<BookingScreen> {
                         _bookingTimer.cancel();
                       }
                       print('Driver is now::  $value');
+                      rideStarted = false;
                       setState(() { });
                   },
 
@@ -542,7 +543,7 @@ class BookingScreenState extends State<BookingScreen> {
     return result;
   }
 
-  void drawPolylineRequest() async {
+  void drawPolylineRequest(LatLng selectedDestination) async {
     Map<String, dynamic> routeData = await _googleMapsServices.getRouteCoordinates(selectedCurrentLocation, selectedDestination);
     createRoute(routeData["route"],routeData["distance"]);
     cameraMove(selectedDestination.latitude, selectedDestination.longitude);
@@ -775,8 +776,13 @@ class BookingScreenState extends State<BookingScreen> {
                 padding: EdgeInsets.all(10.0),
                 child: const Text('ACCEPT',style: TextStyle(fontSize: 20)),
                 onPressed: () async {
-                  Navigator.of(context).pop(ConfirmAction.ACCEPT);
-                  // await driverServices.acceptRideFromDriverEnd(user.auth_key,nearbyReq["source"]);
+                  // Navigator.of(context).pop(ConfirmAction.ACCEPT);
+                  var requestConfirmByDriver = await driverServices.acceptRideFromDriverEnd(user.auth_key,nearbyReq["booking_id"]);
+                  print("trip confimred by Driver >>>>>>>>>");
+                  var tripDetails = await cabbookingService.getBookingIdDataByAccessToken(user.auth_key,nearbyReq["booking_id"]);
+                  rideStarted = true;
+                  print(tripDetails);
+                  await drawPolylineRequest(LatLng(double.parse(tripDetails['source_lat']), double.parse(tripDetails['source_long'])));
                 },
               )
             ],

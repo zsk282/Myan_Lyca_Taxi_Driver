@@ -168,4 +168,26 @@ class DriverApiService{
       throw Exception('Failed to getDocumentType data API');
     }
   }
+
+  Future acceptRideFromDriverEnd(String accessToken,String bookingId) async {
+    final http.Response response = await http.post(
+      base_url+"accept-ride-from-driver?access_token="+accessToken,
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Accept': '*/*',
+      },
+      body: json.encode({
+      "booking_id": bookingId,
+      "status": "1" //hardocoded for now may be need changes
+      }),
+    );
+
+    var temp = json.decode(response.body);
+    if (temp['success'].toString() == 'true') {
+      temp = temp['data'];
+      return temp;
+    } else {
+      throw Exception('Failed to call acceptRideFromDriverEnd API');
+    }
+  }
 }
