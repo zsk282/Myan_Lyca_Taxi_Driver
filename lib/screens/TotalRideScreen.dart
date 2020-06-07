@@ -55,7 +55,7 @@ class TotalRideScreen extends StatefulWidget {
       return Container(child: Center(child: CircularProgressIndicator()));
     }
     List<Widget> temp = [];
-    for(int i=0; i< 5; i++){
+    for(int i=0; i< totalRideData.length; i++){
       temp.add(
         ListTile(
           title: Column(
