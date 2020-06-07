@@ -5,7 +5,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:qrscan/qrscan.dart' as scanner;
 import 'package:flutter/services.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import '../resources/UserRepository.dart';
 
 class QRCodeScreen extends StatefulWidget {
@@ -112,18 +111,16 @@ class QRCodeScreenState extends State<QRCodeScreen> {
                 decoration: new BoxDecoration(
                     // shape: BoxShape.circle,
                     border: Border.all(color: Colors.black),
-                    // image: new DecorationImage(
-                    //   fit: BoxFit.cover,
-                    //   image: new NetworkImage(
-                    //     "https://www.emoderationskills.com/wp-content/uploads/2010/08/QR1.jpg"
-                    //   )
-                    // )
+                    image: new DecorationImage(
+                      fit: BoxFit.cover,
+                      image: user != null ? new NetworkImage(
+                        "http://mltaxi.codeartweb.com/"+ user.qr_code
+                      ) : ""
+                    )
                 ),
-                child: QrImage(
-                  data: user.id != null ? user.id.toString() : 'testing',
-                  version: 1,
-                  size: 200.0,
-                ),
+                // child: user != null ? new NetworkImage(
+                  // "http://mltaxi.codeartweb.com/"+ user.qr_code
+                // ) : CircularProgressIndicator(),
               )
             )
             // RaisedButton(

@@ -39,7 +39,8 @@ class SQLiteDbProvider {
               profile_image TEXT,
               device_id TEXT,
               cab_image TEXT,
-              cab_name TEXT
+              cab_name TEXT,
+              qr_code TEXT 
             )
         """);
       }

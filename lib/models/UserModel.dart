@@ -11,6 +11,7 @@ class UserModel {
   String profile_image;
   String cab_image;
   String cab_name;
+  String qr_code;
   
   UserModel(
     this.id,
@@ -24,7 +25,8 @@ class UserModel {
     this.auth_key,
     this.profile_image,
     this.cab_image,
-    this.cab_name
+    this.cab_name,
+    this.qr_code
   );
 
   UserModel.fromDB(Map<String, dynamic> parsedJson){
@@ -40,6 +42,7 @@ class UserModel {
     this.profile_image = parsedJson['profile_image'];
     this.cab_image = parsedJson['cab_image'];
     this.cab_name = parsedJson['cab_name'];
+    this.qr_code = parsedJson['qr_code'];
   }
 
   UserModel.fromJSON(Map<String, dynamic> parsedJson){
@@ -55,6 +58,7 @@ class UserModel {
     this.profile_image = parsedJson['profile_image'];
     this.cab_image = parsedJson['cab_image'];
     this.cab_name = parsedJson['cab_name'];
+    this.qr_code = parsedJson['qr_code'];
   }
 
   Map<String, dynamic> toMapForDb(){
@@ -70,7 +74,8 @@ class UserModel {
       "auth_key": auth_key,
       "profile_image": profile_image,
       "cab_image": cab_image,
-      "cab_name": cab_name
+      "cab_name": cab_name,
+      "qr_code": qr_code
     };
   }
 }

@@ -96,10 +96,7 @@ class BookingScreenState extends State<BookingScreen> {
 
     getUserData();
     
-    new Timer.periodic(const Duration(seconds:10), (Timer t) => updateMarkersOfDriversNearMe());
-    if(isDriverOnlineflag){
-      _bookingTimer = new Timer.periodic(const Duration(seconds:10), (Timer t) => _asyncBookingConfirmDialog(context));
-    }
+    new Timer.periodic(const Duration(seconds:10), (Timer t) => updateLoctionOfDrivers());
 
     location.onLocationChanged.listen((  currentLocation) {
       latLng =  LatLng(currentLocation.latitude, currentLocation.longitude);
@@ -444,7 +441,14 @@ class BookingScreenState extends State<BookingScreen> {
                   value: isDriverOnlineflag,
                   onChanged: (value) async {
                       var temp_res = await driverServices.updateDriverStatusByAccessToken(user.auth_key, (value ? 1 : 0) );
+
                       isDriverOnlineflag = (temp_res['driver_status'] == "Offline" ? false : true);
+
+                      if(isDriverOnlineflag){
+                        _bookingTimer = new Timer.periodic(const Duration(seconds:10), (Timer t) => _asyncBookingConfirmDialog(context));
+                      }else{
+                        _bookingTimer.cancel();
+                      }
                       print('Driver is now::  $value');
                       setState(() { });
                   },
@@ -597,16 +601,20 @@ class BookingScreenState extends State<BookingScreen> {
     });
   }
 
-  void updateMarkersOfDriversNearMe() async {
-    var drivers = await cabbookingService.getNearbyCabs(user.auth_key, currentLocation.latitude.toString(), currentLocation.longitude.toString());
-    if(drivers.length > 0){
-      for(var i=0; i<drivers.length;i++){
-        if(drivers[i] != null){
-          print("Updateing Driver "+ drivers[i]["driver_id"] + " <<<<<<<<<<<<<<<<<<<<<<");
-          _addMarker('driver-'+drivers[i]["driver_id"], LatLng(double.parse(drivers[i]["latitude"]), double.parse(drivers[i]["longitude"])) );
-        }
-      }
-    }
+  void updateLoctionOfDrivers() async {
+    driverServices.updateDriverLocationByAccessToken(user.auth_key, currentLocation.latitude, currentLocation.longitude);
+    // call to update current location instead
+
+    // no need of fetching nearby drivers 
+    // var drivers = await cabbookingService.getNearbyCabs(user.auth_key, currentLocation.latitude.toString(), currentLocation.longitude.toString());
+    // if(drivers.length > 0){
+    //   for(var i=0; i<drivers.length;i++){
+    //     if(drivers[i] != null){
+    //       print("Updateing Driver "+ drivers[i]["driver_id"] + " <<<<<<<<<<<<<<<<<<<<<<");
+    //       _addMarker('driver-'+drivers[i]["driver_id"], LatLng(double.parse(drivers[i]["latitude"]), double.parse(drivers[i]["longitude"])) );
+    //     }
+    //   }
+    // }
   }
 
   Widget googleMapDriver(){
@@ -735,40 +743,47 @@ class BookingScreenState extends State<BookingScreen> {
   }
 
   Future<ConfirmAction> _asyncBookingConfirmDialog(BuildContext context) async {
-    return showDialog<ConfirmAction>(
-      context: context,
-      barrierDismissible: true, // user must tap button for close dialog!
-      builder: (BuildContext context) {
-        Future.delayed(Duration(seconds: 3), () {
-          Navigator.of(context).pop(ConfirmAction.CANCEL);
-        });
-        return AlertDialog(
-          title: Text('New Booking Nearby!',style: TextStyle(fontSize: 30)),
-          content: const Text(
-              'New booking reques from Nearby location(Testing Address)',style: TextStyle(fontSize: 20)),
-          actions: <Widget>[
-            RaisedButton(
-              color: Colors.red,
-              textColor: Colors.white,
-              padding: EdgeInsets.all(10.0),
-              child: const Text('DENY',style: TextStyle(fontSize: 20)),
-              onPressed: () {
-                Navigator.of(context).pop(ConfirmAction.CANCEL);
-              },
-            ),
-            RaisedButton(
-              color: Colors.green,
-              textColor: Colors.white,
-              padding: EdgeInsets.all(10.0),
-              child: const Text('ACCEPT',style: TextStyle(fontSize: 20)),
-              onPressed: () {
-                Navigator.of(context).pop(ConfirmAction.ACCEPT);
-              },
-            )
-          ],
-        );
-      },
-    );
+
+    var nearbyReq = await driverServices.nearByRequestsByAccessToken(user.auth_key);
+    print("incoming Request>>>>> ");
+    print(nearbyReq);
+    if(nearbyReq != null && !rideStarted){
+      return showDialog<ConfirmAction>(
+        context: context,
+        barrierDismissible: true, // user must tap button for close dialog!
+        builder: (BuildContext context) {
+          Future.delayed(Duration(seconds: 7), () {
+            Navigator.of(context).pop(ConfirmAction.CANCEL);
+          });
+          return AlertDialog(
+            title: Text('New Booking Nearby!',style: TextStyle(fontSize: 30)),
+            content: Text(
+                'New booking reques from Nearby location( ' + nearbyReq["source"] + ')',style: TextStyle(fontSize: 20)),
+            actions: <Widget>[
+              RaisedButton(
+                color: Colors.red,
+                textColor: Colors.white,
+                padding: EdgeInsets.all(10.0),
+                child: const Text('DENY',style: TextStyle(fontSize: 20)),
+                onPressed: () {
+                  Navigator.of(context).pop(ConfirmAction.CANCEL);
+                },
+              ),
+              RaisedButton(
+                color: Colors.green,
+                textColor: Colors.white,
+                padding: EdgeInsets.all(10.0),
+                child: const Text('ACCEPT',style: TextStyle(fontSize: 20)),
+                onPressed: () async {
+                  Navigator.of(context).pop(ConfirmAction.ACCEPT);
+                  // await driverServices.acceptRideFromDriverEnd(user.auth_key,nearbyReq["source"]);
+                },
+              )
+            ],
+          );
+        },
+      );
+    }
   }
 
   Future<String> _asyncWithdrawDialog(BuildContext context) async {

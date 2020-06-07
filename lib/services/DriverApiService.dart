@@ -27,6 +27,27 @@ class DriverApiService{
     }
   }
 
+  Future nearByRequestsByAccessToken(String accessToken) async {
+    final response = await http.get(base_url+"get-nearby-pending-request?access_token="+accessToken);
+    var temp;
+
+    if (response.statusCode == 200) {
+      temp = json.decode(response.body);
+      temp = temp["data"];
+    } else {
+      throw Exception('Failed call get nearByRequestsByAccessToken method');
+    }
+    
+    if (temp['success'].toString() == 'true') {
+      // temp = temp['data'];
+      temp = temp['bookingData'];
+      // print("NER REQUESTss");
+      // print(temp);
+      return temp;
+    } else {
+      throw Exception('Failed to call nearByRequestsByAccessToken API');
+    }
+  }
   /* 
    * 0 == offline 1 == online
    */
@@ -71,6 +92,27 @@ class DriverApiService{
     }
   }
 
+  Future updateDriverLocationByAccessToken(String accessToken,double lat, double lng) async {
+    // final http.Response response = await http.post(
+    //   base_url+"edit-profile?access_token="+accessToken,
+    //   headers: <String, String>{
+    //     'Content-Type': 'application/json; charset=UTF-8',
+    //     'Accept': '*/*',
+    //   },
+    //   body: json.encode(data),
+    // );
+    // var temp = json.decode(response.body);
+    // if (temp['success'].toString() == 'true') {
+    //   temp = temp['data'];
+    //   temp = temp['user'];
+    //   temp['auth_key'] = accessToken; //returning same auth key as this will be same but not returend in API
+    //   return temp;
+    // } else {
+    //   throw Exception('Failed to fetch login data API');
+    // }
+    return true;
+  }
+
   Future getUserWalletAmountByAccessToken(String accessToken) async {
     final response = await http.get(base_url+"wallet-balance?access_token="+accessToken);
     var temp;
@@ -86,6 +128,44 @@ class DriverApiService{
       return temp;
     } else {
       throw Exception('Failed to fetch wallet amount data API');
+    }
+  }
+
+  Future getDocumentType(String accessToken) async {
+    final response = await http.get(base_url+"get-doc-types?access_token="+accessToken);
+    var temp;
+
+    if (response.statusCode == 200) {
+      temp = json.decode(response.body);
+    } else {
+      throw Exception('Failed call getDocumentType method');
+    }
+    
+    if (temp['success'].toString() == 'true') {
+      temp = temp['data'];
+      temp = temp['document_type'];
+      return temp;
+    } else {
+      throw Exception('Failed to getDocumentType data API');
+    }
+  }
+
+    Future getUploadedDocuments(String accessToken) async {
+    final response = await http.get(base_url+"get-documents?access_token="+accessToken);
+    var temp;
+
+    if (response.statusCode == 200) {
+      temp = json.decode(response.body);
+    } else {
+      throw Exception('Failed call getDocumentType method');
+    }
+    
+    if (temp['success'].toString() == 'true') {
+      temp = temp['data'];
+      temp = temp['documents'];
+      return temp;
+    } else {
+      throw Exception('Failed to getDocumentType data API');
     }
   }
 }

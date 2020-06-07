@@ -21,6 +21,7 @@ class UserApiService{
     if (temp['success'].toString() == 'true') {
       temp = temp['data'];
       temp = temp['user'];
+      print(temp);
       return temp;
     } else {
       throw Exception('Failed to fetch login data API');
