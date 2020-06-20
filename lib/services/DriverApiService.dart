@@ -178,7 +178,7 @@ class DriverApiService{
       },
       body: json.encode({
       "booking_id": bookingId,
-      "status": "1" //hardocoded for now may be need changes
+      "status": "6" //hardocoded 6 for status driver accpeted the ride
       }),
     );
 
@@ -188,6 +188,28 @@ class DriverApiService{
       return temp;
     } else {
       throw Exception('Failed to call acceptRideFromDriverEnd API');
+    }
+  }
+
+  Future updateTrip(String accessToken,String bookingId, String status) async {
+    final http.Response response = await http.post(
+      base_url+"update-status?access_token="+accessToken,
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Accept': '*/*',
+      },
+      body: json.encode({
+      "booking_id": bookingId,
+      "status": status 
+      }),
+    );
+
+    var temp = json.decode(response.body);
+    if (temp['success'].toString() == 'true') {
+      temp = temp['data'];
+      return temp;
+    } else {
+      throw Exception('Failed to call cancleTrip API');
     }
   }
 }

@@ -56,6 +56,7 @@ class TotalRideScreen extends StatefulWidget {
     }
     List<Widget> temp = [];
     for(int i=0; i< totalRideData.length; i++){
+      print(">>>>>><<<<<<<<<<<<");
       temp.add(
         ListTile(
           title: Column(
@@ -77,7 +78,7 @@ class TotalRideScreen extends StatefulWidget {
                     )
                   ),
                   SizedBox(width: MediaQuery.of(context).size.width * 0.03),
-                  Expanded(flex:1, child: Text("K "+totalRideData[i]['amount'],style: TextStyle(fontSize:  MediaQuery.of(context).size.height * 0.03,color: Colors.black))),
+                  Expanded(flex:1, child: Text("K "+ (totalRideData[i]['amount'] != null ? totalRideData[i]['amount'] : "0") ,style: TextStyle(fontSize:  MediaQuery.of(context).size.height * 0.03,color: Colors.black))),
                   SizedBox(width: MediaQuery.of(context).size.width * 0.1),
                   Expanded(flex:1, child: Text(totalRideData[i]['date'],style: TextStyle(fontSize:  MediaQuery.of(context).size.height * 0.015,color: Colors.black)),),
                 ],

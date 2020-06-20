@@ -11,6 +11,9 @@ import '../resources/UserRepository.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
 import '../services/DriverApiService.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/foundation.dart';
+import 'package:vibration/vibration.dart';
 
 class BookingScreen extends StatefulWidget {
   @override
@@ -42,8 +45,12 @@ class BookingScreenState extends State<BookingScreen> {
   bool onPaymentSelectStep = false;
   bool onDriverSideConfirmationStep = false;
   bool rideStarted = false;
+  bool isWaitingforUser = false;
+  bool goingToPickupLocation = false;
 
   int tripDistance = 0;
+
+  List deniedTrips = [];
 
   BitmapDescriptor driverIcon;
   BitmapDescriptor destLocIcon;
@@ -69,7 +76,9 @@ class BookingScreenState extends State<BookingScreen> {
   String selectedChartType = 'Week'; 
   var availableCabsType;
   var cabbookingService = new CabTypeService();
-  
+  var tripDetails;
+  bool completeTripPOPUPShown = false;
+
   Timer _bookingTimer;
   // var isDriverOnline = false;
   List<charts.Series> seriesList;
@@ -97,6 +106,8 @@ class BookingScreenState extends State<BookingScreen> {
     getUserData();
     
     new Timer.periodic(const Duration(seconds:10), (Timer t) => updateLoctionOfDrivers());
+    
+    new Timer.periodic(const Duration(seconds:3), (Timer t) => updateCurrentTripStatus());
 
     location.onLocationChanged.listen((  currentLocation) {
       latLng =  LatLng(currentLocation.latitude, currentLocation.longitude);
@@ -445,12 +456,18 @@ class BookingScreenState extends State<BookingScreen> {
                       isDriverOnlineflag = (temp_res['driver_status'] == "Offline" ? false : true);
 
                       if(isDriverOnlineflag){
-                        _bookingTimer = new Timer.periodic(const Duration(seconds:10), (Timer t) => _asyncBookingConfirmDialog(context));
+                        if(_bookingTimer == null){
+                          _bookingTimer = new Timer.periodic(const Duration(seconds:10), (Timer t) => _asyncBookingConfirmDialog(context));
+                        }
                       }else{
-                        _bookingTimer.cancel();
+                        if(_bookingTimer != null){
+                          _bookingTimer.cancel();
+                          _bookingTimer = null;
+                          rideStarted = false;
+                        }
                       }
                       print('Driver is now::  $value');
-                      rideStarted = false;
+                      print("rideStarted:: "+ rideStarted.toString());
                       setState(() { });
                   },
 
@@ -637,31 +654,138 @@ class BookingScreenState extends State<BookingScreen> {
         mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
-          Center(
-            child: RaisedButton(
-              color: Colors.red,
-              textColor: Colors.white,
-              padding: EdgeInsets.all(10.0),
-              onPressed: () async {
-                if(_bookingTimer != null){
-                  _bookingTimer.cancel();
-                }
-                Navigator.pushNamed(context, '/TotalRideScreen');
-              },
-              child: Container(
-                height: MediaQuery.of(context).size.height* 0.045,
-                width: MediaQuery.of(context).size.width * 0.90,
-                child: Center(
-                  child: Text(
-                    "TODAY'S TOTAL RIDES",
-                    style: TextStyle(
-                      fontSize: MediaQuery.of(context).size.width * 0.040
+          Visibility(
+            visible: (!rideStarted && !isWaitingforUser && !goingToPickupLocation),
+            child: Center(
+              child: RaisedButton(
+                color: Colors.red,
+                textColor: Colors.white,
+                padding: EdgeInsets.all(10.0),
+                onPressed: (){
+                    print("THERE IS NO TRIP SO PAGE OPEN");
+                    // ride not started means show total ride page
+                    Navigator.pushNamed(context, '/TotalRideScreen');
+                },
+                child: Container(
+                  height: MediaQuery.of(context).size.height* 0.045,
+                  width: MediaQuery.of(context).size.width * 0.90,
+                  child: Center(
+                    child: Text(
+                      "TODAY'S TOTAL RIDES",
+                      style: TextStyle(
+                        fontSize: MediaQuery.of(context).size.width * 0.040
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          )
+          ),
+          Visibility(
+            visible: isWaitingforUser,
+            child: Center(
+              child: RaisedButton(
+                color: Colors.red,
+                textColor: Colors.white,
+                padding: EdgeInsets.all(10.0),
+                onPressed: () async {
+                  print(">>>> Trip cancle by driver, user not confiremed till now");
+                  await driverServices.updateTrip(user.auth_key,tripDetails["booking_id"], "0");
+                  cancleTrip();
+                },
+                child: Container(
+                  height: MediaQuery.of(context).size.height* 0.045,
+                  width: MediaQuery.of(context).size.width * 0.90,
+                  child: Center(
+                    child: Text(
+                      "DENY CURRENT RIDE",
+                      style: TextStyle(
+                        fontSize: MediaQuery.of(context).size.width * 0.040
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Visibility(
+            visible: goingToPickupLocation,
+            child: Center(
+              child: RaisedButton(
+                color: Colors.red,
+                textColor: Colors.white,
+                padding: EdgeInsets.all(10.0),
+                onPressed: () async {
+                  print(">>>> Trip cancle by driver, user not confiremed till now");
+                  await driverServices.updateTrip(user.auth_key,tripDetails["booking_id"], "0");
+                  cancleTrip();
+                },
+                child: Container(
+                  height: MediaQuery.of(context).size.height* 0.045,
+                  width: MediaQuery.of(context).size.width * 0.90,
+                  child: Center(
+                    child: Text(
+                      "CANCLE CURRENT RIDE",
+                      style: TextStyle(
+                        fontSize: MediaQuery.of(context).size.width * 0.040
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: 10),
+          Visibility(
+            visible: goingToPickupLocation,
+            child: Center(
+              child: RaisedButton(
+                color: Colors.red,
+                textColor: Colors.white,
+                padding: EdgeInsets.all(10.0),
+                onPressed: () async {
+                  await startTrip();
+                },
+                child: Container(
+                  height: MediaQuery.of(context).size.height* 0.045,
+                  width: MediaQuery.of(context).size.width * 0.90,
+                  child: Center(
+                    child: Text(
+                      "REACHED DROP LOCATION START RIDE",
+                      style: TextStyle(
+                        fontSize: MediaQuery.of(context).size.width * 0.040
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Visibility(
+            visible: rideStarted,
+            child: Center(
+              child: RaisedButton(
+                color: Colors.red,
+                textColor: Colors.white,
+                padding: EdgeInsets.all(10.0),
+                onPressed: () async {
+                  await completeTrip();
+                },
+                child: Container(
+                  height: MediaQuery.of(context).size.height* 0.045,
+                  width: MediaQuery.of(context).size.width * 0.90,
+                  child: Center(
+                    child: Text(
+                      "END CURRENT TRIP",
+                      style: TextStyle(
+                        fontSize: MediaQuery.of(context).size.width * 0.040
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -682,6 +806,12 @@ class BookingScreenState extends State<BookingScreen> {
       onMapCreated: (mapController) {
         _controller.complete(mapController);
       },
+      gestureRecognizers: Set()
+        ..add(Factory<PanGestureRecognizer>(() => PanGestureRecognizer()))
+        ..add(Factory<ScaleGestureRecognizer>(() => ScaleGestureRecognizer()))
+        ..add(Factory<TapGestureRecognizer>(() => TapGestureRecognizer()))
+        ..add(Factory<VerticalDragGestureRecognizer>(
+            () => VerticalDragGestureRecognizer()))
     );
   }
 
@@ -746,20 +876,92 @@ class BookingScreenState extends State<BookingScreen> {
   Future<ConfirmAction> _asyncBookingConfirmDialog(BuildContext context) async {
 
     var nearbyReq = await driverServices.nearByRequestsByAccessToken(user.auth_key);
+    
+    var nearbyReqByQRcode = null;
+
+    for(final i in nearbyReq){
+      if( !deniedTrips.contains(i["booking_id"]) ){
+        if(user.id == i["driver_id"]){
+          nearbyReqByQRcode = i;
+          nearbyReq = null;
+          break; 
+        }else{
+          if(i["driver_id"] == null){
+            nearbyReqByQRcode = null;
+            nearbyReq = i;
+            break;
+          }
+        }
+      }
+    }
+
+    print("DENIED Request>>>>> ");
+    print(deniedTrips);
     print("incoming Request>>>>> ");
     print(nearbyReq);
-    if(nearbyReq != null && !rideStarted){
+    print(nearbyReqByQRcode);
+
+
+    // special request to directly start ride with driver
+    if(nearbyReqByQRcode != null && !rideStarted && !deniedTrips.contains(nearbyReqByQRcode["booking_id"])){
+      Vibration.vibrate(duration: 1000);
+
       return showDialog<ConfirmAction>(
         context: context,
         barrierDismissible: true, // user must tap button for close dialog!
         builder: (BuildContext context) {
           Future.delayed(Duration(seconds: 7), () {
+            // close popup if not closed in next 7 seconds automatically
+            Navigator.of(context).pop(ConfirmAction.CANCEL);
+          });
+          return AlertDialog(
+            title: Text('New Booking By Scan Code!',style: TextStyle(fontSize: 30)),
+            content: Text(
+                'New booking requested from sacnning the QR CODE, passenger must be nearby',style: TextStyle(fontSize: 20)),
+            actions: <Widget>[
+              RaisedButton(
+                color: Colors.red,
+                textColor: Colors.white,
+                padding: EdgeInsets.all(10.0),
+                child: const Text('Deny Request',style: TextStyle(fontSize: 20)),
+                onPressed: () {
+                  print("denied REQUEST >>>> " + nearbyReqByQRcode["booking_id"]);
+                  deniedTrips.add(nearbyReqByQRcode["booking_id"]); 
+                  Navigator.of(context).pop(ConfirmAction.CANCEL);
+                },
+              ),
+              RaisedButton(
+                color: Colors.green,
+                textColor: Colors.white,
+                padding: EdgeInsets.all(10.0),
+                child: const Text('Start Trip',style: TextStyle(fontSize: 20)),
+                onPressed: () async {
+                  // hide popup
+                  Navigator.of(context).pop(ConfirmAction.ACCEPT);
+                  
+                  // remove this call when you get new api call to book ride directly
+                  await acceptQRRideByDriver(nearbyReqByQRcode);
+                },
+              )
+            ],
+          );
+        },
+      );
+    }else if(nearbyReq != null && !rideStarted && !deniedTrips.contains(nearbyReq["booking_id"])){
+      Vibration.vibrate(duration: 1000);
+
+      return showDialog<ConfirmAction>(
+        context: context,
+        barrierDismissible: true, // user must tap button for close dialog!
+        builder: (BuildContext context) {
+          Future.delayed(Duration(seconds: 7), () {
+            // close popup if not closed in next 7 seconds automatically
             Navigator.of(context).pop(ConfirmAction.CANCEL);
           });
           return AlertDialog(
             title: Text('New Booking Nearby!',style: TextStyle(fontSize: 30)),
             content: Text(
-                'New booking reques from Nearby location( ' + nearbyReq["source"] + ')',style: TextStyle(fontSize: 20)),
+                'New booking request from Nearby location, WITHOUT QR CODE',style: TextStyle(fontSize: 20)),
             actions: <Widget>[
               RaisedButton(
                 color: Colors.red,
@@ -767,6 +969,8 @@ class BookingScreenState extends State<BookingScreen> {
                 padding: EdgeInsets.all(10.0),
                 child: const Text('DENY',style: TextStyle(fontSize: 20)),
                 onPressed: () {
+                  print("denied REQUEST >>>> " + nearbyReq["booking_id"]);
+                  deniedTrips.add(nearbyReq["booking_id"]);
                   Navigator.of(context).pop(ConfirmAction.CANCEL);
                 },
               ),
@@ -776,19 +980,199 @@ class BookingScreenState extends State<BookingScreen> {
                 padding: EdgeInsets.all(10.0),
                 child: const Text('ACCEPT',style: TextStyle(fontSize: 20)),
                 onPressed: () async {
-                  // Navigator.of(context).pop(ConfirmAction.ACCEPT);
-                  var requestConfirmByDriver = await driverServices.acceptRideFromDriverEnd(user.auth_key,nearbyReq["booking_id"]);
-                  print("trip confimred by Driver >>>>>>>>>");
-                  var tripDetails = await cabbookingService.getBookingIdDataByAccessToken(user.auth_key,nearbyReq["booking_id"]);
-                  rideStarted = true;
-                  print(tripDetails);
-                  await drawPolylineRequest(LatLng(double.parse(tripDetails['source_lat']), double.parse(tripDetails['source_long'])));
+                  // hide popup
+                  Navigator.of(context).pop(ConfirmAction.ACCEPT);
+                  // stop timer until trip completes
+                  print("LLLLLLLLLLLLLLLLLLLLLLLLLLLL");
+                  await acceptRideByDriver(nearbyReq);
                 },
               )
             ],
           );
         },
       );
+    }
+  }
+
+  acceptRideByDriver(nearbyReq) async {
+    // stop timer until trip completes
+    if(_bookingTimer != null) {
+      _bookingTimer.cancel();
+      _bookingTimer = null;
+    }
+    await driverServices.acceptRideFromDriverEnd(user.auth_key,nearbyReq["booking_id"]);
+    tripDetails = await cabbookingService.getBookingIdDataByAccessToken(user.auth_key,nearbyReq["booking_id"]);
+    await drawPolylineRequest(LatLng(double.parse(tripDetails['source_lat']), double.parse(tripDetails['source_long'])));
+  }
+
+  acceptQRRideByDriver(nearbyReqByQRcode) async {
+    // stop timer until trip completes
+    if(_bookingTimer != null){
+      _bookingTimer.cancel();
+      _bookingTimer = null;
+    }
+
+    await driverServices.acceptRideFromDriverEnd(user.auth_key,nearbyReqByQRcode["booking_id"]);
+    print("trip confimred by Driver >>>>>>>>>");
+
+    tripDetails = await cabbookingService.getBookingIdDataByAccessToken(user.auth_key,nearbyReqByQRcode["booking_id"]);
+    
+    // rideStarted = true;
+    print(tripDetails);
+
+    await drawPolylineRequest(LatLng(double.parse(tripDetails['destination_lat']), double.parse(tripDetails['destination_long'])));
+  }
+
+  startTrip() async {
+    print(">>>> START Trip By Driver");
+    await driverServices.updateTrip(user.auth_key,tripDetails["booking_id"], "1");
+    
+    await drawPolylineRequest(LatLng(double.parse(tripDetails['destination_lat']), double.parse(tripDetails['destination_long'])));
+    
+    cameraMove(currentLocation.latitude, currentLocation.longitude);
+
+    setState(() {
+      isWaitingforUser = false;
+      goingToPickupLocation = false;
+      rideStarted = true;
+    });
+  }
+
+  cancleTrip(){
+    _polyLines.clear();
+    _markers.removeWhere((m) => m.markerId.value == "dest_loc");
+    print(_polyLines);
+    rideStarted = false;
+    isWaitingforUser = false;
+    goingToPickupLocation = false;
+    cameraMove(currentLocation.latitude, currentLocation.longitude);
+    completeTripPOPUPShown = false;
+
+    if(isDriverOnlineflag){
+      if(_bookingTimer == null){
+        _bookingTimer = new Timer.periodic(const Duration(seconds:10), (Timer t) => _asyncBookingConfirmDialog(context));
+      }
+    }else{
+      if(_bookingTimer != null){
+        _bookingTimer.cancel();
+        _bookingTimer = null;
+        rideStarted = false;
+      }
+    }
+    tripDetails = null;
+
+    setState(() { });
+  }
+
+  completeTrip() async {
+    print(">>>> COMPLETE Trip By Driver");
+    await driverServices.updateTrip(user.auth_key,tripDetails["booking_id"], "2");
+    completedTripPOPup();
+  }
+
+  completedTripPOPup(){
+    completeTripPOPUPShown = true;
+
+    return showDialog<ConfirmAction>(
+        context: context,
+        barrierDismissible: true, // user must tap button for close dialog!
+        builder: (BuildContext context) {
+          // Future.delayed(Duration(seconds: 7), () {
+          //   // close popup if not closed in next 7 seconds automatically
+          //   Navigator.of(context).pop(ConfirmAction.CANCEL);
+          // });
+          return AlertDialog(
+            title: Center( child:Text('TRIP COMPLETED',style: TextStyle(fontSize: 30))),
+            content: Container(
+              margin: EdgeInsets.only(
+                top: MediaQuery.of(context).size.height * 0.05,
+                bottom: MediaQuery.of(context).size.height * 0.05
+              ),
+              width: MediaQuery.of(context).size.height * 0.30,
+              height: MediaQuery.of(context).size.height * 0.30,
+              decoration: new BoxDecoration(
+                  // shape: BoxShape.circle,
+                  border: Border.all(color: Colors.black),
+                  image: new DecorationImage(
+                    fit: BoxFit.cover,
+                    image: user != null ? new NetworkImage(
+                      "http://mltaxi.codeartweb.com/"+ user.qr_code
+                    ) : ""
+                  )
+              ),
+              // child: user != null ? new NetworkImage(
+                // "http://mltaxi.codeartweb.com/"+ user.qr_code
+              // ) : CircularProgressIndicator(),
+            ),
+            actions: <Widget>[
+              Center(
+                child: RaisedButton(
+                  color: Colors.green,
+                  textColor: Colors.white,
+                  padding: EdgeInsets.all(10.0),
+                  child: const Text('Exit Scan Code',style: TextStyle(fontSize: 20)),
+                  onPressed: () {
+                    Navigator.of(context).pop(ConfirmAction.CANCEL);
+                    cancleTrip();
+                  },
+                )
+              ),
+            ],
+          );
+        },
+      );
+
+    // setState(() { });
+  }
+
+  updateCurrentTripStatus() async {
+    if(tripDetails != null){
+      tripDetails = await cabbookingService.getBookingIdDataByAccessToken(user.auth_key, tripDetails["booking_id"]);
+      print(">>>>>>>>>>>>>>>> 3 sec trip details <<<<<<<<<<<<<<<<");
+      print(tripDetails);
+      print(">>>>>>>>>>>>>>>> 3 sec trip details <<<<<<<<<<<<<<<<");
+
+      if(tripDetails["status"] == 0){
+        // canclled
+        cancleTrip();
+      }
+      if(tripDetails["status"] == 1){
+        // in progress
+      }
+      if(tripDetails["status"] == 2){
+        // completed
+        if(!completeTripPOPUPShown){
+          completedTripPOPup();
+        }
+      }
+      if(tripDetails["status"] == 3){
+        // unavailabel
+        // cancleTrip();
+      }
+      if(tripDetails["status"] == 4){
+        // free
+        // cancleTrip();
+      }
+      if(tripDetails["status"] == 5){
+        // booking pending
+        // cancleTrip();
+      }
+      if(tripDetails["status"] == 6){
+        // accepted by driver
+        print("Accepted by DRIVER, waiting for user to confirm");
+        setState(() {
+          isWaitingforUser = true;
+        });
+      }
+      if(tripDetails["status"] == 7){
+        // accepted by users
+        setState(() {
+          isWaitingforUser = false;
+          goingToPickupLocation = true;
+        });
+      }
+    }else{
+      print(" >>>>>>>>>>> NO TRIP TO SHOW <<<<<<<<<<<< ");
     }
   }
 
@@ -850,6 +1234,7 @@ class BookingScreenState extends State<BookingScreen> {
   @override
   void dispose() {
     _bookingTimer.cancel();
+    _bookingTimer = null;
     super.dispose();
   }
 }
