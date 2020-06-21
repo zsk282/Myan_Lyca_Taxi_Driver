@@ -14,6 +14,8 @@ import '../services/DriverApiService.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart';
 import 'package:vibration/vibration.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:audioplayers/audio_cache.dart';
 
 class BookingScreen extends StatefulWidget {
   @override
@@ -61,6 +63,9 @@ class BookingScreenState extends State<BookingScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
   final TextEditingController _typeAheadController = TextEditingController();
   final ValueNotifier<bool> isDriverOnline = new ValueNotifier<bool>(true);
+
+  AudioPlayer audioPlayer = AudioPlayer();
+  AudioCache audioCache = new AudioCache();
 
   String selectedCabTypeOption;
   String selectedCabTypeRate;
@@ -122,7 +127,7 @@ class BookingScreenState extends State<BookingScreen> {
 
     super.initState();
   }
-
+  
   getUserData() async {
     var userdata = await userRepository.fetchUserFromDB();
     availableCabsType = await CabTypeService().getAvailableCabs(userdata.auth_key);
@@ -905,7 +910,7 @@ class BookingScreenState extends State<BookingScreen> {
     // special request to directly start ride with driver
     if(nearbyReqByQRcode != null && !rideStarted && !deniedTrips.contains(nearbyReqByQRcode["booking_id"])){
       Vibration.vibrate(duration: 1000);
-
+      _playFile();
       return showDialog<ConfirmAction>(
         context: context,
         barrierDismissible: true, // user must tap button for close dialog!
@@ -925,6 +930,7 @@ class BookingScreenState extends State<BookingScreen> {
                 padding: EdgeInsets.all(10.0),
                 child: const Text('Deny Request',style: TextStyle(fontSize: 20)),
                 onPressed: () {
+                  _stopFile();
                   print("denied REQUEST >>>> " + nearbyReqByQRcode["booking_id"]);
                   deniedTrips.add(nearbyReqByQRcode["booking_id"]); 
                   Navigator.of(context).pop(ConfirmAction.CANCEL);
@@ -936,6 +942,7 @@ class BookingScreenState extends State<BookingScreen> {
                 padding: EdgeInsets.all(10.0),
                 child: const Text('Start Trip',style: TextStyle(fontSize: 20)),
                 onPressed: () async {
+                  _stopFile();
                   // hide popup
                   Navigator.of(context).pop(ConfirmAction.ACCEPT);
                   
@@ -949,7 +956,7 @@ class BookingScreenState extends State<BookingScreen> {
       );
     }else if(nearbyReq != null && !rideStarted && !deniedTrips.contains(nearbyReq["booking_id"])){
       Vibration.vibrate(duration: 1000);
-
+      _playFile();
       return showDialog<ConfirmAction>(
         context: context,
         barrierDismissible: true, // user must tap button for close dialog!
@@ -969,6 +976,7 @@ class BookingScreenState extends State<BookingScreen> {
                 padding: EdgeInsets.all(10.0),
                 child: const Text('DENY',style: TextStyle(fontSize: 20)),
                 onPressed: () {
+                  _stopFile();
                   print("denied REQUEST >>>> " + nearbyReq["booking_id"]);
                   deniedTrips.add(nearbyReq["booking_id"]);
                   Navigator.of(context).pop(ConfirmAction.CANCEL);
@@ -980,6 +988,7 @@ class BookingScreenState extends State<BookingScreen> {
                 padding: EdgeInsets.all(10.0),
                 child: const Text('ACCEPT',style: TextStyle(fontSize: 20)),
                 onPressed: () async {
+                  _stopFile();
                   // hide popup
                   Navigator.of(context).pop(ConfirmAction.ACCEPT);
                   // stop timer until trip completes
@@ -992,6 +1001,14 @@ class BookingScreenState extends State<BookingScreen> {
         },
       );
     }
+  }
+
+  void _playFile() async{
+    audioPlayer = await audioCache.play('audio.mp3'); // assign player here
+  }
+
+  void _stopFile() {
+    audioPlayer?.stop(); // stop the file like this
   }
 
   acceptRideByDriver(nearbyReq) async {
@@ -1110,7 +1127,7 @@ class BookingScreenState extends State<BookingScreen> {
                   color: Colors.green,
                   textColor: Colors.white,
                   padding: EdgeInsets.all(10.0),
-                  child: const Text('Exit Scan Code',style: TextStyle(fontSize: 20)),
+                  child: Center( child: Text('Payment Received, End Trip',style: TextStyle(fontSize: 20))),
                   onPressed: () {
                     Navigator.of(context).pop(ConfirmAction.CANCEL);
                     cancleTrip();
@@ -1143,6 +1160,10 @@ class BookingScreenState extends State<BookingScreen> {
         // completed
         if(!completeTripPOPUPShown){
           completedTripPOPup();
+        }else{
+          if(tripDetails["payment_status"] == 1){
+              print("Payment received");
+          }
         }
       }
       if(tripDetails["status"] == 3){
