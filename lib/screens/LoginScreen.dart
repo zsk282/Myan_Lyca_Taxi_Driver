@@ -7,7 +7,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import '../resources/UserRepository.dart';
 import 'package:device_info/device_info.dart';
-
+import 'package:fluttertoast/fluttertoast.dart';
 import '../models/UserModel.dart';
 
 class LoginScreen extends StatefulWidget{
@@ -245,7 +245,7 @@ class LoginState extends State<LoginScreen> {
                   countryMobileCode = value.dialCode;
                 },
                 // Initial selection and favorite can be one of code ('IT') OR dial_code('+39')
-                initialSelection: 'IN',
+                initialSelection: 'MM',
                 //  favorite: ['+39','FR'],
                 // optional. Shows only country name and flag
                 showCountryOnly: false,
@@ -306,9 +306,7 @@ class LoginState extends State<LoginScreen> {
                     icon: Icon(Icons.keyboard_arrow_right,color: Colors.white),
                     onPressed: () {
                       getOtp(countryMobileCode,mobileNumber);
-                      setState(() {
-                        isOtp = true;
-                      });
+                      
                     }
                   ),
                 ),
@@ -364,6 +362,22 @@ class LoginState extends State<LoginScreen> {
 
     deviceOTP = await loginObj.getOTP(countryMobileCode,mobileNumber, deviceId);
     print(">>>>>>>>>>>> OTP IS: $deviceOTP <<<<<<<<<<<<<");
+
+    if(deviceOTP != null){
+      setState(() {
+        isOtp = true;
+      });
+    }else{
+      Fluttertoast.showToast(
+          msg: "Unregistered Driver Mobile Number",
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 3,
+          backgroundColor: Colors.white,
+          textColor: Colors.red,
+          fontSize: 16.0
+      );
+    }
   }
   
   validateOtpAndGetAccessToken(String countryMobileCode, String otp) async {
