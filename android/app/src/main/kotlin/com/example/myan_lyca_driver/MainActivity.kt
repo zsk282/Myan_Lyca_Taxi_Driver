@@ -1,4 +1,4 @@
-package com.example.myan_lyca_driver
+package com.myan_lyca.driver
 
 import androidx.annotation.NonNull;
 import io.flutter.embedding.android.FlutterActivity

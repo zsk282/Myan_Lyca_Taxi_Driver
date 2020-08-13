@@ -5,7 +5,7 @@ import 'dart:io';
 import 'package:async/async.dart';
 
 class DriverApiService {
-  String base_url = 'http://mltaxi.codeartweb.com/api/user/';
+  String base_url = 'http://3.128.103.238/api/user/';
 
   Future getTotalRidesByAccessToken(String accessToken) async {
     final response = await http.get(
@@ -148,6 +148,8 @@ class DriverApiService {
 
   Future updateDriverLocationByAccessToken(
       String accessToken, double lat, double lng) async {
+    print(base_url + "update-driver-location?access_token=" + accessToken);
+    print({"latitude": lat.toString(), "longitude": lng.toString()});
     final http.Response response = await http.post(
       base_url + "update-driver-location?access_token=" + accessToken,
       headers: <String, String>{

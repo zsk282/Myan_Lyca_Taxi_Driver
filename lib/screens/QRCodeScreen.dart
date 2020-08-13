@@ -73,10 +73,10 @@ class QRCodeScreenState extends State<QRCodeScreen> {
                               fit: BoxFit.cover,
                               image: new NetworkImage(user != null
                                   ? (user != null
-                                      ? "http://mltaxi.codeartweb.com/" +
+                                      ? "http://3.128.103.238/" +
                                           user.profile_image
                                       : "")
-                                  : "http://mltaxi.codeartweb.com/media/profileimage/profile-pic.jpg"))))),
+                                  : "http://3.128.103.238/media/profileimage/profile-pic.jpg"))))),
               Center(
                 child: Text(user != null ? user.full_name : '',
                     style: TextStyle(
@@ -118,11 +118,11 @@ class QRCodeScreenState extends State<QRCodeScreen> {
                                   fit: BoxFit.cover,
                                   image: user != null
                                       ? new NetworkImage(
-                                          "http://mltaxi.codeartweb.com/" +
+                                          "http://3.128.103.238/" +
                                               user.qr_code)
                                       : "")),
                           // child: user != null ? new NetworkImage(
-                          // "http://mltaxi.codeartweb.com/"+ user.qr_code
+                          // "http://3.128.103.238/"+ user.qr_code
                           // ) : CircularProgressIndicator(),
                         )
                       : Container())

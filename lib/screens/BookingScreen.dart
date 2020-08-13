@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
+import 'package:myan_lyca_driver/services/UserApiService.dart';
 import '../services/CabTypeService.dart';
 import '../widgets/SideDrawerWidget.dart';
 import '../services/GoogleMapApiService.dart';
@@ -18,6 +19,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:audioplayers/audio_cache.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+// import 'package:geolocator/geolocator.dart';
 
 class BookingScreen extends StatefulWidget {
   @override
@@ -45,6 +47,7 @@ class BookingScreenState extends State<BookingScreen> {
   LatLng selectedCurrentLocation;
   LatLng selectedDestination;
 
+  // Geolocator geolocator = Geolocator()..forceAndroidLocationManager = true;
   LocationData currentLocation;
 
   bool onCabSelectStep = true;
@@ -91,6 +94,15 @@ class BookingScreenState extends State<BookingScreen> {
   var weeklyGraphData = null;
   Timer _bookingTimer;
   int totalPayout = 0;
+
+  Map cabTypetoIdMapping = {
+    "ML AC": "1",
+    "ML NON AC": "2",
+    "ML ROUND": "3",
+    "ML RENT": "4",
+  };
+
+  
   // var isDriverOnline = false;
   List<charts.Series> seriesList;
   @override
@@ -125,14 +137,32 @@ class BookingScreenState extends State<BookingScreen> {
     new Timer.periodic(
         const Duration(seconds: 3), (Timer t) => updateCurrentTripStatus());
 
-    location.onLocationChanged.listen((currentLocation) {
-      latLng = LatLng(currentLocation.latitude, currentLocation.longitude);
-      print(" >>>>>>>>> current Location:$latLng <<<<<<<<<<<<");
+    // location.onLocationChanged.listen((currentLocation) {
+    //   latLng = LatLng(currentLocation.latitude, currentLocation.longitude);
+    //   print(" >>>>>>>>> current Location:$latLng <<<<<<<<<<<<");
 
+    //   if (loading) {
+    //     setState(() {
+    //       loading = false;
+    //     });
+    //   }
+    // });
+
+    location.onLocationChanged.listen((temploc) {
+      currentLocation = temploc;
+      // latLng = LatLng(currentLocation.latitude, currentLocation.longitude);
+      print(" >>>>>>>>> current Location:$currentLocation <<<<<<<<<<<<");
+      print(loading);
       if (loading) {
+        selectedCurrentLocation = LatLng(currentLocation.latitude, currentLocation.longitude);
+        cameraMove(currentLocation.latitude, currentLocation.longitude);
+        // _addMarker("cur_loc", LatLng(currentLocation.latitude, currentLocation.longitude));
         setState(() {
           loading = false;
         });
+      } else {
+        // cameraMove(currentLocation.latitude, currentLocation.longitude);
+        // _addMarker("cur_loc", latLng);
       }
     });
 
@@ -147,6 +177,7 @@ class BookingScreenState extends State<BookingScreen> {
 
   getUserData() async {
     var userdata = await userRepository.fetchUserFromDB();
+    
     availableCabsType =
         await CabTypeService().getAvailableCabs(userdata.auth_key);
     driver_ratings =
@@ -513,7 +544,7 @@ class BookingScreenState extends State<BookingScreen> {
             Row(
               children: <Widget>[
                 Text(
-                  isDriverOnlineflag ? "ONLINE" : "OFFLINE",
+                  user == null ? "Error ": (isDriverOnlineflag ? "ONLINE" : "OFFLINE"),
                   style: TextStyle(
                       color: isDriverOnlineflag ? Colors.green : Colors.grey,
                       fontSize: MediaQuery.of(context).size.width * 0.050,
@@ -522,6 +553,7 @@ class BookingScreenState extends State<BookingScreen> {
                 Switch(
                   value: isDriverOnlineflag,
                   onChanged: (value) async {
+                    
                     var temp_res =
                         await driverServices.updateDriverStatusByAccessToken(
                             user.auth_key, (value ? 1 : 0));
@@ -600,10 +632,13 @@ class BookingScreenState extends State<BookingScreen> {
 
   getLocation() async {
     if (loading) {
-      currentLocation = await location.getLocation();
+      await newLocationFunction();
       selectedCurrentLocation =
           LatLng(currentLocation.latitude, currentLocation.longitude);
       cameraMove(currentLocation.latitude, currentLocation.longitude);
+      setState(() {
+        loading = false;
+      });
       // _addMarker("cur_loc",LatLng(currentLocation.latitude, currentLocation.longitude)); //removed markers for driver app
     } else {
       // cameraMove(currentLocation.latitude, currentLocation.longitude); //removed markers for driver app
@@ -690,8 +725,14 @@ class BookingScreenState extends State<BookingScreen> {
   }
 
   void updateLoctionOfDrivers() async {
-    driverServices.updateDriverLocationByAccessToken(
-        user.auth_key, currentLocation.latitude, currentLocation.longitude);
+    if(user == null){
+      // userRepository.logoutUser();
+      // Navigator.of(context).pop();
+      // Navigator.pushNamed(context, '/');
+    }else{
+      driverServices.updateDriverLocationByAccessToken(user.auth_key, currentLocation.latitude, currentLocation.longitude);
+    }
+    
   }
 
   Widget googleMapDriver() {
@@ -868,7 +909,7 @@ class BookingScreenState extends State<BookingScreen> {
             markers: _markers,
             mapType: MapType.normal,
             initialCameraPosition: CameraPosition(
-              target: latLng,
+              target: selectedCurrentLocation,
               zoom: 14.0,
             ),
             myLocationButtonEnabled: false,
@@ -950,7 +991,7 @@ class BookingScreenState extends State<BookingScreen> {
     var tempnearby = null;
 
     for (final i in nearbyReq) {
-      if (!deniedTrips.contains(i["booking_id"])) {
+      if (!deniedTrips.contains(i["booking_id"]) && (cabTypetoIdMapping[user.cab_name] == i["car_type"])) {
         if (user.id.toString() == i["driver_id"].toString()) {
           nearbyReqByQRcode = i;
           tempnearby = null;
@@ -1199,7 +1240,12 @@ class BookingScreenState extends State<BookingScreen> {
         print(user.qr_code);
         return AlertDialog(
           title: Center(
-              child: Text('TRIP COMPLETED', style: TextStyle(fontSize: 30))),
+              child: Column(
+                children: <Widget>[
+                  Text('TRIP COMPLETED', style: TextStyle(fontSize: 30)),
+                  Text(tripDetails["amount"] != null ? "MMK "+tripDetails["amount"] : "MMK 0")
+                ],
+              )),
           content: user.qr_code != null
               ? Container(
                   margin: EdgeInsets.only(
@@ -1214,11 +1260,10 @@ class BookingScreenState extends State<BookingScreen> {
                           fit: BoxFit.cover,
                           image: user != null
                               ? new NetworkImage(
-                                  "http://mltaxi.codeartweb.com/" +
-                                      user.qr_code)
+                                  "http://3.128.103.238/" + user.qr_code)
                               : "")),
                   // child: user != null ? new NetworkImage(
-                  // "http://mltaxi.codeartweb.com/"+ user.qr_code
+                  // "http://3.128.103.238/"+ user.qr_code
                   // ) : CircularProgressIndicator(),
                 )
               : Container(
@@ -1401,6 +1446,27 @@ class BookingScreenState extends State<BookingScreen> {
         );
       },
     );
+  }
+  newLocationFunction() async {
+    bool _serviceEnabled;
+    PermissionStatus _permissionGranted;
+
+    _serviceEnabled = await location.serviceEnabled();
+    if (!_serviceEnabled) {
+      _serviceEnabled = await location.requestService();
+      if (!_serviceEnabled) {
+        return;
+      }
+    }
+  
+    _permissionGranted = await location.hasPermission();
+    if (_permissionGranted == PermissionStatus.denied) {
+      _permissionGranted = await location.requestPermission();
+      if (_permissionGranted != PermissionStatus.granted) {
+        return;
+      }
+    }
+    currentLocation = await location.getLocation();
   }
 
   @override

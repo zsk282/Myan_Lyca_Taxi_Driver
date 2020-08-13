@@ -5,10 +5,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class AuthApiService {
-  String base_url = 'http://mltaxi.codeartweb.com/api/';
-
+  String base_url = 'http://3.128.103.238/api/';
   Future<String> getOTP(
       String countryMobileCode, String mobileNumber, String deviceId) async {
+    print(base_url + 'login/index');
     final http.Response response = await http.post(
       base_url + 'login/index',
       headers: <String, String>{
@@ -16,10 +16,13 @@ class AuthApiService {
         'Accept': '*/*',
       },
       body: jsonEncode({
-        "Users": {"mobile": mobileNumber, "device_id": deviceId}
+        "Users": {
+          "mobile": mobileNumber,
+          "device_id": deviceId,
+          "device_token": ""
+        }
       }),
     );
-
     var temp = json.decode(response.body);
     print(temp);
     if (temp['success'].toString() == 'true') {

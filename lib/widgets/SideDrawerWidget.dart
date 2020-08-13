@@ -75,10 +75,10 @@ class SideDrawerWidgetState extends State<SideDrawerWidget> {
                                               image: new NetworkImage(user !=
                                                       null
                                                   ? (user.profile_image != null
-                                                      ? "http://mltaxi.codeartweb.com/" +
+                                                      ? "http://3.128.103.238/" +
                                                           user.profile_image
                                                       : "")
-                                                  : "http://mltaxi.codeartweb.com/media/profileimage/profile-pic.jpg")))),
+                                                  : "http://3.128.103.238/media/profileimage/profile-pic.jpg")))),
                                   SizedBox(height: 10),
                                   Text(
                                     user != null
@@ -119,7 +119,7 @@ class SideDrawerWidgetState extends State<SideDrawerWidget> {
                                               image: user != null
                                                   ? user.cab_image != null
                                                       ? new NetworkImage(
-                                                          "http://mltaxi.codeartweb.com/" +
+                                                          "http://3.128.103.238/" +
                                                               user.cab_image)
                                                       : new AssetImage(
                                                           "assets/images/car@3x.png")
