@@ -32,7 +32,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
         appBar: new AppBar(
           title: new Text('Edit Profile'),
         ),
-        body: GestureDetector(
+        body: (user == null) ? CircularProgressIndicator() : GestureDetector(
             onTap: () {
               FocusScope.of(context).requestFocus(new FocusNode());
             },
@@ -63,6 +63,8 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                                 width: MediaQuery.of(context).size.width * 0.3,
                                 height: MediaQuery.of(context).size.width * 0.3,
                                 decoration: new BoxDecoration(
+                                    color: Colors.white,
+                                    border: Border.all(color: Colors.white),
                                     shape: BoxShape.circle,
                                     image: new DecorationImage(
                                         fit: BoxFit.cover,

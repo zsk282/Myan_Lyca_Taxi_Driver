@@ -90,8 +90,9 @@ class AuthApiService {
       return temp;
       // return 'c8c1977ee9712f1a4b3dc1f54757c47c';//temp;
     } else {
+      return null;//temp;
       // return 'c8c1977ee9712f1a4b3dc1f54757c47c';//temp;
-      throw Exception('Failed to fetch Login step 2 data API');
+      // throw Exception('Failed to fetch Login step 2 data API');
     }
   }
 }

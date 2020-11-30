@@ -177,13 +177,17 @@ class LoginState extends State<LoginScreen> {
         child: Wrap(
           children: <Widget>[
           Container(
-            width: MediaQuery.of(context).size.width * 0.5,
+            width: MediaQuery.of(context).size.width * 0.4,
             decoration: BoxDecoration(
               border: Border(
                   bottom: BorderSide(width: 1.0, color: Colors.white),
               ),
             ),
             child: TextField(
+              textInputAction: TextInputAction.go,
+              onSubmitted: (value) {
+                validateOtpAndGetAccessToken(mobileNumber,otp);
+              },
               onChanged: (value){
                   if(value.length == 6){
                     print('<<<<<<<<<<<<<<<<<<<<<<<< $value >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
@@ -201,9 +205,9 @@ class LoginState extends State<LoginScreen> {
                   fontSize:  MediaQuery.of(context).size.width * 0.04,
                   fontWeight: FontWeight.w400
               ),
-              textAlign: TextAlign.center,
+              textAlign: TextAlign.left,
               keyboardType: TextInputType.number,
-              textInputAction: TextInputAction.next,
+              // textInputAction: TextInputAction.next,
               inputFormatters: <TextInputFormatter>[
                 LengthLimitingTextInputFormatter(6),
                 WhitelistingTextInputFormatter.digitsOnly
@@ -212,16 +216,29 @@ class LoginState extends State<LoginScreen> {
                 hintText: 'Enter OTP',
                 hintStyle: TextStyle(fontSize:  MediaQuery.of(context).size.width * 0.04,color: Colors.white),
                 border: InputBorder.none,
-                suffixIcon: Visibility(
+                prefixIcon: Visibility(
                   visible: isOtp,
                   child: IconButton(
                     color: Colors.white,
-                    icon: Icon(Icons.keyboard_arrow_right,color: Colors.white),
+                    icon: Icon(Icons.keyboard_arrow_left,color: Colors.white),
                     onPressed: () {
-                      validateOtpAndGetAccessToken(mobileNumber,otp);
+                      setState(() {
+                        allowGetOtp = false;
+                        isOtp = false;
+                      });
                     }
                   ),
                 )
+                // suffixIcon: Visibility(
+                //   visible: isOtp,
+                //   child: IconButton(
+                //     color: Colors.white,
+                //     icon: Icon(Icons.keyboard_arrow_right,color: Colors.white),
+                //     onPressed: () {
+                //       validateOtpAndGetAccessToken(mobileNumber,otp);
+                //     }
+                //   ),
+                // )
               ),
             )
           )
@@ -260,7 +277,7 @@ class LoginState extends State<LoginScreen> {
               )
             ),
           Container(
-            width: MediaQuery.of(context).size.width * 0.5,
+            width: MediaQuery.of(context).size.width * 0.35,
             decoration: BoxDecoration(
               border: Border(
                   bottom: BorderSide(width: 1.0, color: Colors.white),
@@ -291,25 +308,33 @@ class LoginState extends State<LoginScreen> {
               textAlign: TextAlign.left,
               keyboardType: TextInputType.number,
               textInputAction: TextInputAction.next,
+              onSubmitted: (value) {
+                if(value.length >= 10){
+                  getOtp(countryMobileCode,mobileNumber);
+                  setState(() {
+                    allowGetOtp = false;
+                  });
+                }
+              },
               inputFormatters: <TextInputFormatter>[
                 LengthLimitingTextInputFormatter(10),
                 WhitelistingTextInputFormatter.digitsOnly
               ],
               decoration: InputDecoration(
-                hintText: 'Enter your mobile number',
+                hintText: 'Mobile Number',
                 hintStyle: TextStyle(fontSize:  MediaQuery.of(context).size.width * 0.04,color: Colors.white),
                 border: InputBorder.none,
-                suffixIcon: Visibility(
-                  visible: allowGetOtp,
-                  child: IconButton(
-                    color: Colors.white,
-                    icon: Icon(Icons.keyboard_arrow_right,color: Colors.white),
-                    onPressed: () {
-                      getOtp(countryMobileCode,mobileNumber);
+                // suffixIcon: Visibility(
+                //   visible: allowGetOtp,
+                //   child: IconButton(
+                //     color: Colors.white,
+                //     icon: Icon(Icons.keyboard_arrow_right,color: Colors.white),
+                //     onPressed: () {
+                //       getOtp(countryMobileCode,mobileNumber);
                       
-                    }
-                  ),
-                ),
+                //     }
+                //   ),
+                // ),
               ),
             )
           )
@@ -383,17 +408,26 @@ class LoginState extends State<LoginScreen> {
   validateOtpAndGetAccessToken(String countryMobileCode, String otp) async {
     
     var loginObj = new AuthApiService();
-
+  
     userAccessToken = await loginObj.validateOTP(mobileNumber,otp);
-    print('>>> OTP VALIDATION: $userAccessToken <<<<<<<<<<<<<<<');
-    
-    var userID = await userRepository.loginUser(userAccessToken);
-
-    print('>>>> User id: $userID Logged in in application <<<<<<< ');
     if(userAccessToken != null){
+      print('>>> OTP VALIDATION: $userAccessToken <<<<<<<<<<<<<<<');
+      
+      var userID = await userRepository.loginUser(userAccessToken);
+
+      print('>>>> User id: $userID Logged in in application <<<<<<< ');
+      
       Navigator.pushReplacementNamed(context, '/BookingScreen');
     }else{
-      print(' ERROROR IN fetching user Details');
+      Fluttertoast.showToast(
+        msg: "Invalid OTP",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 5,
+        backgroundColor: Colors.white,
+        textColor: Colors.red,
+        fontSize: MediaQuery.of(context).size.width * 0.050
+      );
     }
   }
 

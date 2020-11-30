@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:location/location.dart';
+// import 'package:location/location.dart';
 import 'package:myan_lyca_driver/services/UserApiService.dart';
 import '../services/CabTypeService.dart';
 import '../widgets/SideDrawerWidget.dart';
@@ -20,6 +20,7 @@ import 'package:audioplayers/audio_cache.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 // import 'package:geolocator/geolocator.dart';
+import 'package:geolocation/geolocation.dart';
 
 class BookingScreen extends StatefulWidget {
   @override
@@ -37,7 +38,7 @@ class BookingScreenState extends State<BookingScreen> {
   GoogleMapController mapController;
   GoogleMapsServices _googleMapsServices = GoogleMapsServices();
   Completer<GoogleMapController> _controller = Completer();
-  var location = new Location();
+  // var location = new Location();
 
   final Set<Marker> _markers = {};
   final Set<Polyline> _polyLines = {};
@@ -48,7 +49,7 @@ class BookingScreenState extends State<BookingScreen> {
   LatLng selectedDestination;
 
   // Geolocator geolocator = Geolocator()..forceAndroidLocationManager = true;
-  LocationData currentLocation;
+  var currentLocation;
 
   bool onCabSelectStep = true;
   bool onPaymentSelectStep = false;
@@ -93,7 +94,10 @@ class BookingScreenState extends State<BookingScreen> {
   bool completeTripPOPUPShown = false;
   var weeklyGraphData = null;
   Timer _bookingTimer;
+  Timer _driverTimer;
+  Timer _tripTimer;
   int totalPayout = 0;
+  StreamSubscription<LocationResult> subscription;
 
   Map cabTypetoIdMapping = {
     "ML AC": "1",
@@ -127,14 +131,14 @@ class BookingScreenState extends State<BookingScreen> {
       driverIcon = onValue;
     });
 
-    getLocation();
+    newLocationFunction();
 
     getUserData();
 
-    new Timer.periodic(
+    _driverTimer = new Timer.periodic(
         const Duration(seconds: 10), (Timer t) => updateLoctionOfDrivers());
 
-    new Timer.periodic(
+    _tripTimer =  new Timer.periodic(
         const Duration(seconds: 3), (Timer t) => updateCurrentTripStatus());
 
     // location.onLocationChanged.listen((currentLocation) {
@@ -148,21 +152,30 @@ class BookingScreenState extends State<BookingScreen> {
     //   }
     // });
 
-    location.onLocationChanged.listen((temploc) {
-      currentLocation = temploc;
-      // latLng = LatLng(currentLocation.latitude, currentLocation.longitude);
-      print(" >>>>>>>>> current Location:$currentLocation <<<<<<<<<<<<");
-      print(loading);
-      if (loading) {
-        selectedCurrentLocation = LatLng(currentLocation.latitude, currentLocation.longitude);
-        cameraMove(currentLocation.latitude, currentLocation.longitude);
-        // _addMarker("cur_loc", LatLng(currentLocation.latitude, currentLocation.longitude));
-        setState(() {
-          loading = false;
-        });
-      } else {
-        // cameraMove(currentLocation.latitude, currentLocation.longitude);
-        // _addMarker("cur_loc", latLng);
+    subscription = Geolocation.locationUpdates(
+      accuracy: LocationAccuracy.best,
+      displacementFilter: 1.0, // in meters
+      inBackground: true, // by default, location updates will pause when app is inactive (in background). Set to `true` to continue updates in background.
+    ).listen((result) {
+      if(result.isSuccessful) {
+        currentLocation = result.location;
+        print(" >>>>>>>>> current Location:$currentLocation <<<<<<<<<<<<");
+        print(loading);
+        if (loading) {
+          selectedCurrentLocation = LatLng(currentLocation.latitude, currentLocation.longitude);
+          cameraMove(currentLocation.latitude, currentLocation.longitude);
+          _addMarker("cur_loc", LatLng(currentLocation.latitude, currentLocation.longitude));
+          setState(() {
+            loading = false;
+          });
+        } else {
+          if(rideStarted){
+            onlydrawPolylineRequestWhileMovingTrip();
+          }
+
+          // _addMarker("cur_loc", LatLng(currentLocation.latitude, currentLocation.longitude));
+          // _addMarker("cur_loc", LatLng(26.942935,75.752707));
+        }
       }
     });
 
@@ -224,6 +237,19 @@ class BookingScreenState extends State<BookingScreen> {
     ];
   }
 
+    void onlydrawPolylineRequestWhileMovingTrip() async {
+    Map<String, dynamic> routeData = await _googleMapsServices.getRouteCoordinates( LatLng(currentLocation.latitude, currentLocation.longitude), selectedDestination);
+    _polyLines.remove('ongoingTrip');
+    _polyLines.add(Polyline(
+        polylineId: PolylineId('ongoingTrip'),
+        width: 3,
+        points: _convertToLatLng(_decodePoly(routeData["route"])),
+        color: Colors.red));
+
+    cameraMove(currentLocation.latitude, currentLocation.longitude);
+    _addMarker("dest_loc", selectedDestination);
+  }
+  
   Widget earningChart() {
     return Center(
         child: Container(
@@ -544,7 +570,7 @@ class BookingScreenState extends State<BookingScreen> {
             Row(
               children: <Widget>[
                 Text(
-                  user == null ? "Error ": (isDriverOnlineflag ? "ONLINE" : "OFFLINE"),
+                  user == null ? " ": (isDriverOnlineflag ? "ONLINE" : "OFFLINE"),
                   style: TextStyle(
                       color: isDriverOnlineflag ? Colors.green : Colors.grey,
                       fontSize: MediaQuery.of(context).size.width * 0.050,
@@ -630,21 +656,21 @@ class BookingScreenState extends State<BookingScreen> {
     print(tripDistance);
   }
 
-  getLocation() async {
-    if (loading) {
-      await newLocationFunction();
-      selectedCurrentLocation =
-          LatLng(currentLocation.latitude, currentLocation.longitude);
-      cameraMove(currentLocation.latitude, currentLocation.longitude);
-      setState(() {
-        loading = false;
-      });
-      // _addMarker("cur_loc",LatLng(currentLocation.latitude, currentLocation.longitude)); //removed markers for driver app
-    } else {
-      // cameraMove(currentLocation.latitude, currentLocation.longitude); //removed markers for driver app
-      // _addMarker("cur_loc",latLng);
-    }
-  }
+  // getLocation() async {
+  //   await newLocationFunction();
+  //   if (loading) {
+  //     selectedCurrentLocation =
+  //         LatLng(currentLocation.latitude, currentLocation.longitude);
+  //     cameraMove(currentLocation.latitude, currentLocation.longitude);
+  //     setState(() {
+  //       loading = false;
+  //     });
+  //     // _addMarker("cur_loc",LatLng(currentLocation.latitude, currentLocation.longitude)); //removed markers for driver app
+  //   } else {
+  //     // cameraMove(currentLocation.latitude, currentLocation.longitude); //removed markers for driver app
+  //     // _addMarker("cur_loc",latLng);
+  //   }
+  // }
 
   void onCameraMove(CameraPosition position) {
     latLng = position.target;
@@ -904,7 +930,7 @@ class BookingScreenState extends State<BookingScreen> {
             child: Center(child: CircularProgressIndicator()))
         : GoogleMap(
             mapToolbarEnabled: false,
-            myLocationEnabled: true,
+            myLocationEnabled: false,
             polylines: polyLines,
             markers: _markers,
             mapType: MapType.normal,
@@ -937,7 +963,7 @@ class BookingScreenState extends State<BookingScreen> {
             FlatButton(
               padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.03),
               onPressed: () {
-                getLocation();
+                newLocationFunction();
                 cameraMove(currentLocation.latitude, currentLocation.longitude);
                 // drawPolylineRequest();
               },
@@ -1193,7 +1219,7 @@ class BookingScreenState extends State<BookingScreen> {
   cancleTrip() {
     _polyLines.clear();
     _markers.removeWhere((m) => m.markerId.value == "dest_loc");
-    print(_polyLines);
+    // print(_polyLines);
     rideStarted = false;
     isWaitingforUser = false;
     goingToPickupLocation = false;
@@ -1447,32 +1473,58 @@ class BookingScreenState extends State<BookingScreen> {
       },
     );
   }
-  newLocationFunction() async {
-    bool _serviceEnabled;
-    PermissionStatus _permissionGranted;
 
-    _serviceEnabled = await location.serviceEnabled();
-    if (!_serviceEnabled) {
-      _serviceEnabled = await location.requestService();
-      if (!_serviceEnabled) {
-        return;
-      }
+  newLocationFunction() async {
+    final GeolocationResult result = await Geolocation.requestLocationPermission(
+      permission: LocationPermission(
+        android: LocationPermissionAndroid.fine,
+        ios: LocationPermissionIOS.always,
+      ),
+      openSettingsIfDenied: true,
+    );
+
+    if(result.isSuccessful) {
+      // location permission is granted (or was already granted before making the request)
+      // currentLocation = await Geolocation.lastKnownLocation();
+
+      Geolocation.currentLocation(accuracy: LocationAccuracy.best).listen((resultLoc) {
+        print(resultLoc);
+        if(resultLoc.isSuccessful) {
+          currentLocation = resultLoc.location;
+        
+          if (loading) {
+            selectedCurrentLocation = LatLng(currentLocation.latitude, currentLocation.longitude);
+            cameraMove(currentLocation.latitude, currentLocation.longitude);
+            // _addMarker("cur_loc", LatLng(currentLocation.latitude, currentLocation.longitude));
+            setState(() {
+              loading = false;
+            });
+          } else {
+            // _addMarker("cur_loc", LatLng(currentLocation.latitude, currentLocation.longitude));
+          }
+        }else{
+          newLocationFunction();
+        }
+      });
+    }else{
+      newLocationFunction();
     }
-  
-    _permissionGranted = await location.hasPermission();
-    if (_permissionGranted == PermissionStatus.denied) {
-      _permissionGranted = await location.requestPermission();
-      if (_permissionGranted != PermissionStatus.granted) {
-        return;
-      }
-    }
-    currentLocation = await location.getLocation();
   }
 
   @override
   void dispose() {
+    subscription.cancel();
+    
     _bookingTimer.cancel();
+    _driverTimer.cancel();
+    _driverTimer = null;
+
+    _tripTimer.cancel();
+    _tripTimer= null;
+  
     _bookingTimer = null;
+
+
     super.dispose();
   }
 }

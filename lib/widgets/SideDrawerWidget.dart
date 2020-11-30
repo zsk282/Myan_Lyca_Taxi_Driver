@@ -155,14 +155,14 @@ class SideDrawerWidgetState extends State<SideDrawerWidget> {
           Expanded(
             flex: 3,
             child: ListView(children: [
-              ListTile(
-                title: Text("Home"),
-                leading: Icon(Icons.home),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  Navigator.pushNamed(context, '/BookingScreen');
-                },
-              ),
+              // ListTile(
+              //   title: Text("Home"),
+              //   leading: Icon(Icons.home),
+              //   onTap: () {
+              //     Navigator.of(context).pop();
+              //     Navigator.pushNamed(context, '/BookingScreen');
+              //   },
+              // ),
               ListTile(
                 title: Text("Documents"),
                 leading: Icon(Icons.account_balance_wallet),

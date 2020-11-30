@@ -16,9 +16,9 @@ class GoogleMapsServices{
     String language = 'en';
     List results = [];
 
-    // String url = "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$keyword&types=geocode&language=$language&key=$apiKey";
+    String url = "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$keyword&types=geocode&language=$language&key=$apiKey&location=$lat,$lng";
     // String url = "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$keyword&types=geocode&language=$language&components=country:in&key=$apiKey";
-    String url = "https://maps.googleapis.com/maps/api/place/textsearch/json?location=$lat,$lng&radius=50000&query=$keyword&key=$apiKey";
+    // String url = "https://maps.googleapis.com/maps/api/place/textsearch/json?location=$lat,$lng&radius=50000&query=$keyword&key=$apiKey";
     print(url);
     http.Response response = await http.get(url);
     Map values = jsonDecode(response.body);

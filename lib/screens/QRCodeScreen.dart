@@ -31,7 +31,6 @@ class QRCodeScreenState extends State<QRCodeScreen> {
 
   getUserData() async {
     var userdata = await userRepository.fetchUserFromDB();
-    print(userdata.auth_key);
     setState(() {
       user = userdata;
     });
@@ -61,7 +60,7 @@ class QRCodeScreenState extends State<QRCodeScreen> {
           child: Column(
             children: <Widget>[
               Center(
-                  child: Container(
+                  child: user == null ? CircularProgressIndicator() : Container(
                       margin: EdgeInsets.only(
                           top: MediaQuery.of(context).size.height * 0.05,
                           bottom: MediaQuery.of(context).size.height * 0.05),

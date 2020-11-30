@@ -55,10 +55,13 @@ class UserRepository{
   updateUserProfileImage(String accessToken, file) async {
     // update user in both database and call on API server
     var user = await _userApiService.updateImageByAccessToken(accessToken,file);
+    print(user);
     // if data returnd by API then save that as it is that is new updated data for same User
     // AUTH should be same ***assumption
+    await _dbProvider.logoutUser();
+
     if(user != null){
-      return _dbProvider.addUser(UserModel.fromJSON(user));
+      return await _dbProvider.addUser(UserModel.fromJSON(user));
     }else{
       return null;
     }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../resources/UserRepository.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class UploadImageScreen extends StatefulWidget {
   @override
@@ -25,12 +26,25 @@ class UploadImageScreenState extends State<UploadImageScreen> {
 
   void _chooseImage() async {
     profileImg = await ImagePicker.pickImage(source: ImageSource.gallery);
+    print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"+profileImg.path);
     await userRepository.updateUserProfileImage(user.auth_key, profileImg.path);
+    Fluttertoast.showToast(
+      msg: "Profile Picture Updated Successfully",
+      toastLength: Toast.LENGTH_LONG,
+      gravity: ToastGravity.BOTTOM,
+      timeInSecForIosWeb: 5,
+      backgroundColor: Colors.red,
+      textColor: Colors.white,
+      fontSize: MediaQuery.of(context).size.width * 0.030
+    );
     await getUserData();
   }
 
   getUserData() async {
     var userdata = await userRepository.fetchUserFromDB();
+    // print("...................................");
+    // print(userdata.profile_image);
+    // print("...................................");
     setState(() {
       user = userdata;
     });
